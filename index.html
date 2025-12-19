@@ -22,10 +22,12 @@
 <body class="bg-gray-50">
   <div id="root"></div>
 
-  <script type="text/babel">
-    // Defensive check to ensure Recharts loaded correctly in single-file mode
+  <script type="text/javascript">
+    const { useState, useMemo } = React;
+
     if (!window.Recharts) {
-      throw new Error('Recharts failed to load. Check CDN availability.');
+      document.getElementById('root').innerHTML = '<p style="padding:20px;color:red;">Recharts failed to load. Please refresh.</p>';
+      throw new Error('Recharts failed to load');
     }
 
     const {
@@ -39,7 +41,7 @@
     } = window.Recharts;
 
     function PardonsAnalysis() {
-      const [selectedMetric, setSelectedMetric] = useState('race');
+      const [selectedMetric, setSelectedMetric] = React.useState('race');
 
       const rawData = `04/06/2023,Roberto V. Alvarez,Montgomery,26,59,Male,White,(0 to 5),,2,1
 04/06/2023,Francis J. Boyd,Philadelphia,50,74,Male,White,(0 to 5),,2,2
@@ -58,106 +60,65 @@
 08/03/2023,Tanya A. Dacri,Philadelphia,21,55,Female,White,(0 to 5),,10,1
 08/03/2023,Robert F. Demon,Philadelphia,24,62,Male,Black,(0 to 5),,2,1`;
 
-      const cases = useMemo(() => {
-        return rawData.split('\n').map(line => {
-          const p = line.split(',');
-          return {
-            race: p[6],
-            sex: p[5],
-            violent: p[10] ? parseInt(p[10]) : 0,
-            vote: p[7],
-            timeServed: p[3] && p[4] ? parseInt(p[4]) - parseInt(p[3]) : null
-          };
-        }).filter(c => c.vote === '(0 to 5)');
-      }, []);
+      const cases = rawData.split('
+').map(line => {
+        const p = line.split(',');
+        return {
+          race: p[6],
+          sex: p[5],
+          violent: p[10] ? parseInt(p[10]) : 0,
+          vote: p[7],
+          timeServed: p[3] && p[4] ? parseInt(p[4]) - parseInt(p[3]) : null
+        };
+      }).filter(c => c.vote === '(0 to 5)');
 
-      const analysis = useMemo(() => {
-        const out = { byRace:{}, bySex:{}, byViolent:{}, byTime:{} };
+      const analysis = { byRace:{}, bySex:{}, byViolent:{}, byTime:{} };
 
-        cases.forEach(c => {
-          if (c.race) out.byRace[c.race] = (out.byRace[c.race] || 0) + 1;
-          if (c.sex) out.bySex[c.sex] = (out.bySex[c.sex] || 0) + 1;
+      cases.forEach(c => {
+        if (c.race) analysis.byRace[c.race] = (analysis.byRace[c.race] || 0) + 1;
+        if (c.sex) analysis.bySex[c.sex] = (analysis.bySex[c.sex] || 0) + 1;
 
-          const v = c.violent === 0 ? 'No violent charges'
-                  : c.violent === 1 ? '1 violent charge'
-                  : '2+ violent charges';
-          out.byViolent[v] = (out.byViolent[v] || 0) + 1;
+        const v = c.violent === 0 ? 'No violent charges'
+                : c.violent === 1 ? '1 violent charge'
+                : '2+ violent charges';
+        analysis.byViolent[v] = (analysis.byViolent[v] || 0) + 1;
 
-          if (c.timeServed) {
-            const t = c.timeServed < 25 ? '<25 years'
-                    : c.timeServed < 35 ? '25–34 years'
-                    : '35+ years';
-            out.byTime[t] = (out.byTime[t] || 0) + 1;
-          }
-        });
+        if (c.timeServed) {
+          const t = c.timeServed < 25 ? '<25 years'
+                  : c.timeServed < 35 ? '25–34 years'
+                  : '35+ years';
+          analysis.byTime[t] = (analysis.byTime[t] || 0) + 1;
+        }
+      });
 
-        return out;
-      }, [cases]);
+      const metric = selectedMetric === 'race' ? analysis.byRace
+                    : selectedMetric === 'sex' ? analysis.bySex
+                    : selectedMetric === 'violent' ? analysis.byViolent
+                    : analysis.byTime;
 
-      const chartData = useMemo(() => {
-        const metric = selectedMetric === 'race' ? analysis.byRace
-                      : selectedMetric === 'sex' ? analysis.bySex
-                      : selectedMetric === 'violent' ? analysis.byViolent
-                      : analysis.byTime;
+      const chartData = Object.entries(metric).map(([k,v]) => ({ category:k, count:v }));
 
-        return Object.entries(metric).map(([k, v]) => ({ category: k, count: v }));
-      }, [analysis, selectedMetric]);
-
-      return (
-        <div className="p-6 max-w-7xl mx-auto">
-
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Pennsylvania Board of Pardons Voting Patterns
-            </h1>
-            <p className="text-gray-600 mt-2 max-w-3xl">
-              An exploratory dashboard analyzing unanimous denials in Pennsylvania Board of Pardons cases reviewed in 2023.
-            </p>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-6 text-sm">
-            <strong>How to read this dashboard:</strong>
-            <ul className="list-disc ml-5 mt-2 space-y-1">
-              <li>Charts reflect <em>unanimous denials (0–5)</em>.</li>
-              <li>Data is descriptive and intended to surface patterns, not causal conclusions.</li>
-              <li>Categories include race, sex, offense severity, and estimated time served.</li>
-            </ul>
-          </div>
-
-          <div className="mb-4 flex gap-4">
-            <select
-              className="border px-3 py-2 rounded"
-              value={selectedMetric}
-              onChange={e => setSelectedMetric(e.target.value)}
-            >
-              <option value="race">Race</option>
-              <option value="sex">Sex</option>
-              <option value="violent">Violent Charges</option>
-              <option value="timeServed">Time Served</option>
-            </select>
-          </div>
-
-          <div className="bg-white rounded shadow p-4">
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#2563eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <footer className="mt-12 text-xs text-gray-500 border-t pt-4">
-            Prepared by Karissa Wenk · Data source: Pennsylvania Board of Pardons public records · Updated March 2025
-          </footer>
-        </div>
+      return React.createElement('div',{className:'p-6 max-w-7xl mx-auto'},
+        React.createElement('h1',{className:'text-3xl font-bold mb-2'},'Pennsylvania Board of Pardons Voting Patterns'),
+        React.createElement('select',{className:'border px-3 py-2 rounded mb-4',value:selectedMetric,onChange:e=>setSelectedMetric(e.target.value)},
+          React.createElement('option',{value:'race'},'Race'),
+          React.createElement('option',{value:'sex'},'Sex'),
+          React.createElement('option',{value:'violent'},'Violent Charges'),
+          React.createElement('option',{value:'timeServed'},'Time Served')
+        ),
+        React.createElement(ResponsiveContainer,{width:'100%',height:320},
+          React.createElement(BarChart,{data:chartData},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),
+            React.createElement(XAxis,{dataKey:'category'}),
+            React.createElement(YAxis,null),
+            React.createElement(Tooltip,null),
+            React.createElement(Bar,{dataKey:'count',fill:'#2563eb'})
+          )
+        )
       );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<PardonsAnalysis />);
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(PardonsAnalysis));
   </script>
 </body>
 </html>
