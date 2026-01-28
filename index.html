@@ -1,124 +1,1059 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pennsylvania Board of Pardons – Voting Patterns Dashboard</title>
-
-  <!-- React -->
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-
-  <!-- Recharts (UMD build exposes window.Recharts) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/recharts.min.js"></script>
-
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PA Board of Pardons Analysis Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'Source Sans Pro', 'Segoe UI', system-ui, sans-serif; 
+      background: #f7fafc;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+      padding: 40px 32px;
+      color: #fff;
+    }
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      margin-top: 8px;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    
+    .filters {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    .filter-label {
+      font-size: 14px;
+      font-weight: 600;
+      align-self: center;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .filter-group label {
+      font-size: 12px;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filter-group select {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #2d3748;
+      font-size: 14px;
+      cursor: pointer;
+      min-width: 140px;
+      font-family: inherit;
+    }
+    .reset-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #718096;
+      font-family: inherit;
+    }
+    .reset-btn:hover {
+      background: #f7fafc;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 12px 24px;
+      background: transparent;
+      color: #2d3748;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 400;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .tab-btn.active {
+      background: #1a365d;
+      color: #fff;
+      font-weight: 600;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    .stat-card .label {
+      color: #718096;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-card .subtitle {
+      color: #718096;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .chart-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    .chart-card h3 {
+      margin: 0 0 20px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .chart-container {
+      position: relative;
+      height: 250px;
+    }
+    
+    .info-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+    .info-box h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .info-box p {
+      margin: 0;
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .member-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .member-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+      border-top: 4px solid;
+    }
+    .member-card.mg { border-top-color: #805ad5; }
+    .member-card.ad { border-top-color: #d69e2e; }
+    .member-card.jw { border-top-color: #3182ce; }
+    .member-card.hg { border-top-color: #38a169; }
+    .member-card.js { border-top-color: #e53e3e; }
+    .member-card.kk { border-top-color: #ed8936; }
+    .member-card.lw { border-top-color: #319795; }
+    .member-card.mh { border-top-color: #d53f8c; }
+    .member-card.ds { border-top-color: #667eea; }
+    .member-card.jf { border-top-color: #48bb78; }
+    .member-card.ms { border-top-color: #9f7aea; }
+    .member-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .member-name {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .member-name.mg { color: #805ad5; }
+    .member-name.ad { color: #d69e2e; }
+    .member-name.jw { color: #3182ce; }
+    .member-name.hg { color: #38a169; }
+    .member-name.js { color: #e53e3e; }
+    .member-name.kk { color: #ed8936; }
+    .member-name.lw { color: #319795; }
+    .member-name.mh { color: #d53f8c; }
+    .member-name.ds { color: #667eea; }
+    .member-name.jf { color: #48bb78; }
+    .member-name.ms { color: #9f7aea; }
+    .member-subtitle {
+      margin-top: 4px;
+      color: #718096;
+      font-size: 13px;
+    }
+    .member-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .member-badge.mg { background: rgba(128,90,213,0.15); color: #805ad5; }
+    .member-badge.ad { background: rgba(214,158,46,0.15); color: #d69e2e; }
+    .member-badge.jw { background: rgba(49,130,206,0.15); color: #3182ce; }
+    .member-badge.hg { background: rgba(56,161,105,0.15); color: #38a169; }
+    .member-badge.js { background: rgba(229,62,62,0.15); color: #e53e3e; }
+    .member-badge.kk { background: rgba(237,137,54,0.15); color: #ed8936; }
+    .member-badge.lw { background: rgba(49,151,149,0.15); color: #319795; }
+    .member-badge.mh { background: rgba(213,63,140,0.15); color: #d53f8c; }
+    .member-badge.ds { background: rgba(102,126,234,0.15); color: #667eea; }
+    .member-badge.jf { background: rgba(72,187,120,0.15); color: #48bb78; }
+    .member-badge.ms { background: rgba(159,122,234,0.15); color: #9f7aea; }
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .pattern-box {
+      background: #f7fafc;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .pattern-box .title {
+      font-size: 11px;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pattern-box .content {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    
+    .findings-box {
+      background: linear-gradient(135deg, rgba(26,54,93,0.1) 0%, rgba(44,82,130,0.1) 100%);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid rgba(26,54,93,0.3);
+    }
+    .findings-box h3 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a365d;
+    }
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .finding-card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .finding-card .title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .finding-card .text {
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .table-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .table-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .table-scroll {
+      overflow-x: auto;
+      max-height: 600px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      background: #f7fafc;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tr:nth-child(even) {
+      background: #f7fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-approved {
+      background: rgba(56,161,105,0.2);
+      color: #38a169;
+    }
+    .badge-denied {
+      background: rgba(229,62,62,0.2);
+      color: #e53e3e;
+    }
+    .badge-outlier {
+      background: rgba(237,137,54,0.2);
+      color: #ed8936;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    .footer {
+      margin-top: 40px;
+      padding: 20px 0;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      color: #718096;
+      font-size: 13px;
+    }
+    
+    .insight {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #718096;
+    }
+    .insight strong {
+      color: #2d3748;
+    }
+  </style>
 </head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>PA Board of Pardons Analysis</h1>
+      <p>2015-2025 Merit Review Voting Patterns Dashboard</p>
+    </div>
+  </div>
 
-<body class="bg-gray-50">
-  <div id="root"></div>
+  <div class="main">
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-label">Filters:</div>
+      <div class="filter-group">
+        <label>Year</label>
+        <select id="yearFilter">
+          <option value="All">All Years</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Race</label>
+        <select id="raceFilter">
+          <option value="All">All</option>
+          <option value="Black">Black</option>
+          <option value="White">White</option>
+          <option value="Asian/Pacific Islander">Asian/Pacific Islander</option>
+          <option value="Unknown">Unknown</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Sex</label>
+        <select id="sexFilter">
+          <option value="All">All</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>County</label>
+        <select id="countyFilter">
+          <option value="All">All</option>
+        </select>
+      </div>
+      <button class="reset-btn" onclick="resetFilters()">Reset</button>
+    </div>
 
-  <script type="text/javascript">
-    const { useState, useMemo } = React;
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('overview', this)">Overview</button>
+      <button class="tab-btn" onclick="showTab('members', this)">Dissenting Vote Analysis</button>
+      <button class="tab-btn" onclick="showTab('factors', this)">Case Factors</button>
+      <button class="tab-btn" onclick="showTab('cases', this)">Case Details</button>
+    </div>
 
-    if (!window.Recharts) {
-      document.getElementById('root').innerHTML = '<p style="padding:20px;color:red;">Recharts failed to load. Please refresh.</p>';
-      throw new Error('Recharts failed to load');
+    <!-- Overview Tab -->
+    <div id="overview" class="tab-content active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Total Cases</div>
+          <div class="value" id="totalCases" style="color: #1a365d;">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Approved</div>
+          <div class="value" id="approvedCases" style="color: #38a169;">0</div>
+          <div class="subtitle" id="approvalRate">0% approval rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Denied</div>
+          <div class="value" id="deniedCases" style="color: #e53e3e;">0</div>
+          <div class="subtitle" id="denialRate">0% denial rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Split Votes</div>
+          <div class="value" id="splitVotes" style="color: #ed8936;">0</div>
+          <div class="subtitle" id="splitRate">0% of cases</div>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-bottom: 24px; background: #fffaf0; border-color: #ed8936;">
+        <h3 style="color: #c05621;">⚠️ Data Completeness Note</h3>
+        <p><strong id="unknownCount">0</strong> of <strong id="totalForUnknown">0</strong> cases (<strong id="unknownPercent">0%</strong>) have incomplete demographic data (race, sex, and/or age listed as "Unknown"). Analysis of demographic patterns should be interpreted with this limitation in mind.</p>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Vote Distribution</h3>
+          <div class="chart-container">
+            <canvas id="voteChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Outcomes</h3>
+          <div class="chart-container">
+            <canvas id="outcomeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Outcomes by Race</h3>
+        <div class="chart-container">
+          <canvas id="raceChart"></canvas>
+        </div>
+        <div class="insight"><strong>Note:</strong> "Unknown" indicates cases where race was not recorded in the original data. This may reflect data collection gaps rather than actual demographics.</div>
+      </div>
+    </div>
+
+    <!-- Board Member Analysis Tab -->
+    <div id="members" class="tab-content">
+      <div class="info-box">
+        <h3>Understanding Dissenting Votes</h3>
+        <p>The PA Board of Pardons has <strong>5 members</strong>: the Lieutenant Governor (Chair), Attorney General, and three Governor-appointed members. A pardon recommendation requires a majority (3+ votes). This dataset only records <strong>dissenting votes</strong> — board members who voted differently from the majority. Members who always voted with the majority do not appear in this data. <strong>"Yes" dissenters</strong> voted FOR a pardon when the majority voted against. <strong>"No" dissenters</strong> voted AGAINST when the majority approved.</p>
+      </div>
+
+      <div class="member-cards" id="memberCardsContainer">
+        <!-- Member cards will be dynamically generated -->
+      </div>
+
+      <div class="chart-card">
+        <h3>Dissenting Vote Frequency by Board Member</h3>
+        <div class="chart-container">
+          <canvas id="memberChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case Factors Tab -->
+    <div id="factors" class="tab-content">
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Approval by Age at Merit Review</h3>
+          <div class="chart-container">
+            <canvas id="ageChart"></canvas>
+          </div>
+          <div class="insight"><strong>Insight:</strong> Older applicants (76+) show slightly higher approval rates, potentially indicating time served is a factor.</div>
+        </div>
+        <div class="chart-card">
+          <h3>Approval by Time Served</h3>
+          <div class="chart-container">
+            <canvas id="timeChart"></canvas>
+          </div>
+          <div class="insight"><strong>Insight:</strong> Longer incarceration periods correlate with higher approval likelihood.</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Approval by Number of Violent Charges</h3>
+        <div class="chart-container">
+          <canvas id="violentChart"></canvas>
+        </div>
+        <div class="insight"><strong>Insight:</strong> Cases with fewer violent charges have higher (though still low overall) approval rates.</div>
+      </div>
+
+      <div class="findings-box" style="margin-top: 24px;">
+        <h3>Key Findings Summary</h3>
+        <div class="findings-grid">
+          <div class="finding-card">
+            <div class="title">Overall Approval Rate</div>
+            <div class="text" id="findingApproval">Loading...</div>
+          </div>
+          <div class="finding-card">
+            <div class="title">Top Dissenting Member</div>
+            <div class="text" id="findingMG">Loading...</div>
+          </div>
+          <div class="finding-card">
+            <div class="title">Second Most Active</div>
+            <div class="text" id="findingAD">Loading...</div>
+          </div>
+          <div class="finding-card">
+            <div class="title">Conservative Dissenters</div>
+            <div class="text" id="findingJW">Board members who dissented on approvals show more conservative voting patterns.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case Details Tab -->
+    <div id="cases" class="tab-content">
+      <div class="table-container">
+        <div class="table-header">
+          <h3 id="caseCount">All Cases (0)</h3>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Date</th>
+                <th>Name</th>
+                <th>County</th>
+                <th>Race</th>
+                <th>Sex</th>
+                <th style="text-align:center">Vote</th>
+                <th>Outlier</th>
+                <th style="text-align:center">Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="caseTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <strong>Data Limitations:</strong> Race data includes only "Black," "White," "Asian/Pacific Islander," and "Unknown" categories — this does not reflect the full diversity of PA's population and may indicate incomplete data collection. A significant portion of cases have missing demographic information. Voting data only records dissenting votes, not each board member's full voting record.<br><br>
+      Data source: PA Board of Pardons Merit Review 2015-2025 • Dashboard for analysis purposes
+    </div>
+  </div>
+
+  <script>
+    // Raw data - all 652 cases from 2015-2025
+    const rawData = [{"year": 2015, "date": "11-5  2015", "name": "William E. Lowery", "county": "Allegheny", "ageConviction": 63, "ageMerit": 84, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "11-5  2015", "name": "Daniel Peters", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(4 to 1)", "outlier": "No: KK", "nonViolent": 2, "violent": 2}, {"year": 2015, "date": "11-5  2015", "name": "Gary A. Robinson", "county": "Beaver", "ageConviction": 27, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 5}, {"year": 2015, "date": "11-5 2015", "name": "Fernando Camilo", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 54, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "11-5 2015", "name": "Johnny James", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2015, "date": "11-5 2015", "name": "Marcus Lloyd", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 36, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2015, "date": "2/5/2015", "name": "Brenda I. Baker", "county": "Philadelphia", "ageConviction": 39, "ageMerit": 70, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Alberto Castillo, Jr.", "county": "Lehigh", "ageConviction": 28, "ageMerit": 58, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Ernest R. Davis", "county": "Philadelphia", "ageConviction": 55, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2015, "date": "2/5/2015", "name": "Richard H. Diggs, Sr.", "county": "Allegheny", "ageConviction": 27, "ageMerit": 64, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2015, "date": "2/5/2015", "name": "Ernest R. Potts, III", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 57, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes: HG", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Leonard R. Reel", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Clarence L. Robinson", "county": "Allegheny", "ageConviction": 25, "ageMerit": 46, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Clarence Sutton", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2015, "date": "2/5/2015", "name": "Kermit Williams, Jr.", "county": "Philadelphia", "ageConviction": 50, "ageMerit": 81, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2015, "date": "5-13 2015", "name": "Edwin Dejesus", "county": "Philadelphia", "ageConviction": 38, "ageMerit": 70, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2015, "date": "5-13 2015", "name": "Elsworth L. Groff, Jr.", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2015, "date": "5-13 2015", "name": "Kevin M. Bell", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 41, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2015, "date": "8-27 2015", "name": "Thurmond R. Berry", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No: LW, KK", "nonViolent": 5, "violent": 5}, {"year": 2015, "date": "8-27 2015", "name": "David Coades", "county": "Chester", "ageConviction": 19, "ageMerit": 63, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2015, "date": "8-27 2015", "name": "Roderick H. Frey", "county": "Lancaster", "ageConviction": 35, "ageMerit": 78, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2015, "date": "8-27 2015", "name": "Jo-Von V. Heffner", "county": "Lancaster", "ageConviction": 19, "ageMerit": 31, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2015, "date": "8-27 2015", "name": "Douglas Hollis", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: HG", "nonViolent": 1, "violent": 4}, {"year": 2015, "date": "8-27 2015", "name": "Ronald Menyweather", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 71, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2015, "date": "8-27 2015", "name": "Richard Moore", "county": "Philadelphia", "ageConviction": 17, "ageMerit": 45, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No: LW, KK", "nonViolent": 2, "violent": 2}, {"year": 2015, "date": "8-27 2015", "name": "Joseph G. Nara, Sr.", "county": "Fayette", "ageConviction": 57, "ageMerit": 64, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2015, "date": "8-27 2015", "name": "David L. Slaughenhoupt", "county": "Mercer", "ageConviction": 21, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(4 to 0)", "outlier": "Recommended by the Board", "nonViolent": null, "violent": null}, {"year": 2015, "date": "8-27 2015", "name": "Andre M. Wright", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2016, "date": "11/10/2016", "name": "Richard Pacell", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(4 to 1)", "outlier": "No: KK", "nonViolent": 1, "violent": 1}, {"year": 2016, "date": "11/10/2016", "name": "Robert E. Wenger, Jr.", "county": "Adams", "ageConviction": 25, "ageMerit": 57, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 5}, {"year": 2016, "date": "3/3/2016", "name": "Michael H. Ali", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "3/3/2016", "name": "Alice I. Allen", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "3/3/2016", "name": "Wade D. Dairston", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "3/3/2016", "name": "Michael S. Mayo", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 48, "sex": "Male", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2016, "date": "3/3/2016", "name": "Edward D. McDevitt, Jr.", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(0 to 4)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2016, "date": "3/3/2016", "name": "Larry E. Oates", "county": "Chester", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2016, "date": "3/3/2016", "name": "James A. Rivers", "county": "Allegheny", "ageConviction": 37, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "3/3/2016", "name": "Debra R. Ward", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 56, "sex": "Female", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2016, "date": "5/19/2016", "name": "Timothy Jones, Jr.", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 43, "sex": "Male", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2016, "date": "8/11/2016", "name": "Warriner L. Bass, II", "county": "Cumberland", "ageConviction": 20, "ageMerit": 65, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "8/11/2016", "name": "Raymond L. Jordan", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(4 to 0)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2016, "date": "8/11/2016", "name": "John J. Merrick", "county": "Luzerne", "ageConviction": 29, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2016, "date": "8/11/2016", "name": "William M. Prosdocimo", "county": "Allegheny", "ageConviction": 30, "ageMerit": 64, "sex": "Male", "race": "White", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "11/9/2017", "name": "Francis J. Boyd", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 60, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "Herbert D. Hardwick", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: MG", "nonViolent": 3, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "Merle W. Hoag", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "11/9/2017", "name": "David A. Johnson", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "Richard J. Marra, Jr.", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 53, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": 1, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "Eliza J. Medley", "county": "Chester", "ageConviction": 22, "ageMerit": 62, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "11/9/2017", "name": "Antonio Molina", "county": "Philadelphia", "ageConviction": 47, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "Bruce C. Murray", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "11/9/2017", "name": "Edward C. Printup", "county": "Dauphin", "ageConviction": 20, "ageMerit": 57, "sex": "Male", "race": "Asian/Pacific Islander", "vote": "(4 to 1)", "outlier": "No: JS", "nonViolent": 0, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "William H. Smith", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 60, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No: JS", "nonViolent": 1, "violent": 1}, {"year": 2017, "date": "11/9/2017", "name": "John W. Waddy", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2017, "date": "2/9/2017", "name": "Sylvia A. Boykin", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 58, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2017, "date": "2/9/2017", "name": "Randal E. Dietz", "county": "Berks", "ageConviction": 25, "ageMerit": 53, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2017, "date": "2/9/2017", "name": "Eric I. Eisen", "county": "Allegheny", "ageConviction": 25, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2017, "date": "2/9/2017", "name": "Quentin T. Jackson", "county": "Delaware", "ageConviction": 23, "ageMerit": 38, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2017, "date": "2/9/2017", "name": "Edward T. Logan", "county": "Cambria", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": 1}, {"year": 2017, "date": "2/9/2017", "name": "Harold E. Mease", "county": "Delaware", "ageConviction": 33, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 7}, {"year": 2017, "date": "2/9/2017", "name": "Sara M. Richardson", "county": "Allegheny", "ageConviction": 21, "ageMerit": 52, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "5/11/2017", "name": "William E. Decker", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes: MG", "nonViolent": null, "violent": null}, {"year": 2017, "date": "5/11/2017", "name": "Anthony G. Eberhardt", "county": "Allegheny", "ageConviction": 21, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2017, "date": "5/11/2017", "name": "Floyd J. Monaco", "county": "Lawrence", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "8/10/2017", "name": "Tina M. Brosius", "county": "Dauphin", "ageConviction": 19, "ageMerit": 41, "sex": "Female", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2017, "date": "8/10/2017", "name": "Troy D. Coleman", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2017, "date": "8/10/2017", "name": "Commer Glass", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: MG", "nonViolent": 0, "violent": 1}, {"year": 2017, "date": "8/10/2017", "name": "Jimmy L. Herr", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2017, "date": "8/10/2017", "name": "Jose G. LaPorte", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2017, "date": "8/10/2017", "name": "Robert A. Lutz", "county": "Mercer", "ageConviction": 42, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2017, "date": "8/10/2017", "name": "Earl J. Shilling", "county": "Clinton", "ageConviction": 26, "ageMerit": 42, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2017, "date": "8/10/2017", "name": "Lawrence G. Wells", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2018, "date": "11/08/2018", "name": "John T. Price", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "11/08/2018", "name": "Thomas B. Resuta", "county": "Berks", "ageConviction": 38, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 5}, {"year": 2018, "date": "11/08/2018", "name": "Michael A. Rinaldi", "county": "Delaware", "ageConviction": 24, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2018, "date": "11/08/2018", "name": "Jean M. Saxon", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": null}, {"year": 2018, "date": "11/08/2018", "name": "John L. Smale", "county": "Lehigh", "ageConviction": 25, "ageMerit": 44, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 4}, {"year": 2018, "date": "11/08/2018", "name": "Joseph R. Spinks", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "11/08/2018", "name": "Gregory L. Stroll", "county": "Dauphin", "ageConviction": 26, "ageMerit": 49, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "11/08/2018", "name": "Gerald K. Teagle", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, MS", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "11/08/2018", "name": "Oliver Walthour, Jr.", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2018, "date": "11/8/2018", "name": "Angelo A. Barrett", "county": "Beaver", "ageConviction": 26, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Cyd C. Berger", "county": "Allegheny", "ageConviction": 25, "ageMerit": 63, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "11/8/2018", "name": "Methino D. Bey", "county": "Allegheny", "ageConviction": 21, "ageMerit": 44, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2018, "date": "11/8/2018", "name": "Naomi Blount", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 68, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Ralph A. Bolden", "county": "Allegheny", "ageConviction": 30, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 4}, {"year": 2018, "date": "11/8/2018", "name": "Earnest J. Burton, Jr.", "county": "Lehigh", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "11/8/2018", "name": "Robert S. Caporello", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "11/8/2018", "name": "John T. Colbert", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 78, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Al Collantes", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 39, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Daniel J. Cummings", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "(also 4 to 1 No: JS - I'm confused)", "nonViolent": 1, "violent": 4}, {"year": 2018, "date": "11/8/2018", "name": "William C. Dones", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2018, "date": "11/8/2018", "name": "Matthew N. Garcia", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 37, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Howard Gibson", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "11/8/2018", "name": "John M. Haynes", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2018, "date": "11/8/2018", "name": "Damion J. Leafey", "county": "Delaware", "ageConviction": 23, "ageMerit": 42, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Ralph T. Maser", "county": "Bucks", "ageConviction": 24, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Richard Mercado", "county": "Monroe", "ageConviction": 20, "ageMerit": 56, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Roberto A. Montanez", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 64, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "11/8/2018", "name": "Clarence Morris", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2018, "date": "11/8/2018", "name": "Kenneth C. Morris, Jr.", "county": "Mckean", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "11/8/2018", "name": "Tricia Muff", "county": "Delaware", "ageConviction": 25, "ageMerit": 45, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 5}, {"year": 2018, "date": "11/8/2018", "name": "William M. Payne", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "5/10/2018", "name": "Craig P. Datesman", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "White", "vote": "(3 to 2)", "outlier": "No: HG, JS", "nonViolent": null, "violent": null}, {"year": 2018, "date": "5/10/2018", "name": "Allen E. Davis", "county": "Northampton", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "5/10/2018", "name": "Jeffrey S. Emerson", "county": "Chester", "ageConviction": 25, "ageMerit": 54, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "5/10/2018", "name": "Graydon M. Fenstemaker, Jr.", "county": "Columbia", "ageConviction": 40, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2018, "date": "5/10/2018", "name": "Derrick D. Frontroy", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "5/10/2018", "name": "Jean-Claude P. Hill", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 7}, {"year": 2018, "date": "5/10/2018", "name": "Leroy A. Ponzo, Jr.", "county": "Delaware", "ageConviction": 23, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2018, "date": "5/10/2018", "name": "Robert E. Rigler", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 7}, {"year": 2018, "date": "5/10/2018", "name": "Thomas E. Robinson", "county": "Montgomery", "ageConviction": 26, "ageMerit": 47, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": 2, "violent": 3}, {"year": 2018, "date": "5/10/2018", "name": "Joseph R. Schaeffer, Jr.", "county": "Berks", "ageConviction": 22, "ageMerit": 57, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes: JW, MS", "nonViolent": 1, "violent": 5}, {"year": 2018, "date": "5/10/2018", "name": "Robert J. Swartworth", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "White", "vote": "(3 to 2)", "outlier": "No: MG, JS", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Miguel A. Alvarez", "county": "Montgomery", "ageConviction": 45, "ageMerit": 74, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 6}, {"year": 2018, "date": "8/9/2018", "name": "Bruce E. Bainbridge", "county": "Schuylkill", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Daniel A. Barnett", "county": "Chester", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "William C. Bartlett", "county": "Montgomery", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Wayne N. Battle", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(1 to 4):", "outlier": "Yes: MS", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "Hubert F. Blount", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 70, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "Leon Bradley, Sr.", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 6, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "Ricky Brockington", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Wallace B. Brown", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": 7, "violent": 7}, {"year": 2018, "date": "8/9/2018", "name": "Freddy Butler", "county": "Montgomery", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "John Davis", "county": "Philadelphia", "ageConviction": 49, "ageMerit": 80, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "Mitchell D. DiVentura", "county": "Northampton", "ageConviction": 27, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes: MG, MS", "nonViolent": 0, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "James J. Doss", "county": "Delaware", "ageConviction": 30, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes: MG, MS", "nonViolent": 3, "violent": 7}, {"year": 2018, "date": "8/9/2018", "name": "Steven D. Frederick", "county": "Berks", "ageConviction": 27, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2018, "date": "8/9/2018", "name": "Richard A. Guy", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Charles M. Haas", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 69, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2018, "date": "8/9/2018", "name": "Craig E. Henry", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Larry G. Hull", "county": "Franklin", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Harry L. Jefferies", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "David Jones", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "Martin Lebron, Jr.", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "London B. Linton", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 48, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "Cornwallis Littles", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes: JW, MS", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Michael Lyons", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 2)", "outlier": "No: HG, JS", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Donald R. Massey", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "James B. Miles", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 81, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "Paul J. Perry", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 62, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": 2, "violent": 2}, {"year": 2018, "date": "8/9/2018", "name": "James R. W. E. Robinson", "county": "Cumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "Chad W. Spaide", "county": "Pike", "ageConviction": null, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "Larry Stephenson", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2018, "date": "8/9/2018", "name": "George A. Trudel, III", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": 2, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "Bruce A. Watts", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2018, "date": "8/9/2018", "name": "Robert D. Wideman", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes: MS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "02/07/2019", "name": "Samuel J. Barlow, Jr.", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Charles W. Bechtel, III", "county": "Perry", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "unknown", "nonViolent": null, "violent": null}, {"year": 2019, "date": "02/07/2019", "name": "Adolfo Carrillo", "county": "Philadelphia", "ageConviction": 37, "ageMerit": 79, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Allen B. Coleman", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2019, "date": "02/07/2019", "name": "Franklin D. Fickle, Jr.", "county": "Mercer", "ageConviction": 38, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Richard B. Glenn", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "02/07/2019", "name": "Henrietta Harris", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 61, "sex": "Female", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Derrick L. Ingram", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "William P. Middleton", "county": "Lebanon", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "02/07/2019", "name": "Anthony W. Perkins", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Johnny L. Ruffin, Jr.", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "02/07/2019", "name": "Marie Scott", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 65, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2019, "date": "02/07/2019", "name": "Patricia A. Sloan", "county": "Westmoreland", "ageConviction": 54, "ageMerit": 71, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2019, "date": "02/07/2019", "name": "Garnet D. Smith", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 63, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 8, "violent": 3}, {"year": 2019, "date": "02/07/2019", "name": "Anthony Sutton, Sr.", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2019, "date": "02/07/2019", "name": "James W. Taylor", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 77, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2019, "date": "02/07/2019", "name": "Gregory Womack", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 44, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 5}, {"year": 2019, "date": "02/07/2019", "name": "Andre M. Wright", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Carroll I. Blackwell", "county": "Allegheny", "ageConviction": 34, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Steven A. Gardner", "county": "Butler", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "05/02/2019", "name": "Cynthia M. Gonzalez", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "05/02/2019", "name": "Hector Gonzalez, Jr.", "county": "Lehigh", "ageConviction": 25, "ageMerit": 54, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 9, "violent": 7}, {"year": 2019, "date": "05/02/2019", "name": "Caroline Guy", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Dannielle T. Hadley", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  JW, JF", "nonViolent": null, "violent": null}, {"year": 2019, "date": "05/02/2019", "name": "Thomas A. Hughes", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "05/02/2019", "name": "Thomas B. Mathis", "county": "Northampton", "ageConviction": 21, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  JW, JF", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Robert A. McNeil", "county": "Chester", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "05/02/2019", "name": "Eliezer Perez, Sr.", "county": "Berks", "ageConviction": 18, "ageMerit": 46, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  JW, JF", "nonViolent": 7, "violent": 3}, {"year": 2019, "date": "05/02/2019", "name": "Ernest R. Potts, III", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Felix Rolon", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 64, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "05/02/2019", "name": "Jake T. Wesley", "county": "Allegheny", "ageConviction": 28, "ageMerit": 51, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2019, "date": "08/08/2019", "name": "Benjamin Armstead", "county": "Philadelphia", "ageConviction": 37, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  JW, JF", "nonViolent": 2, "violent": 2}, {"year": 2019, "date": "08/08/2019", "name": "Joanne Butler", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 66, "sex": "Female", "race": "Black", "vote": "(2 to 3)\n(3 to 2)", "outlier": "Yes:  JW, JF\nNo:  HG, JS", "nonViolent": 4, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Raymond Caliman", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Vincent D. Caracciolo", "county": "Blair", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Robert L. Carter", "county": "Philadelphia", "ageConviction": 54, "ageMerit": 83, "sex": "Male", "race": "Black", "vote": "(0 to 5)\n(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 1, "violent": 4}, {"year": 2019, "date": "08/08/2019", "name": "Gervin L. Deaton", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Clarence Easley", "county": "Philadelphia", "ageConviction": 43, "ageMerit": 80, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2019, "date": "08/08/2019", "name": "Stacey E. Fox", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Charles J. Goldblum", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Lenward E. Golphin", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Eugene L. Grannison", "county": "Mercer", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Terri-Joell Harper", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 50, "sex": "Female", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 4, "violent": 3}, {"year": 2019, "date": "08/08/2019", "name": "Michael A. Helwig", "county": "Chester", "ageConviction": 22, "ageMerit": 58, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2019, "date": "08/08/2019", "name": "James D. Inge", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Paula M. Johnson", "county": "Lebanon", "ageConviction": 25, "ageMerit": 55, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2019, "date": "08/08/2019", "name": "Raymond R. Johnson", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Oliver I. Macklin", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 62, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2019, "date": "08/08/2019", "name": "Antonio A. Mazzccua", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Haywood Miller", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2019, "date": "08/08/2019", "name": "David H. Moore", "county": "Allegheny", "ageConviction": 22, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2019, "date": "08/08/2019", "name": "James F. Morris", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 70, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Lee C. Moua", "county": "Lancaster", "ageConviction": 24, "ageMerit": 54, "sex": "Male", "race": "Asian/Pacific Islander", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Bruce E. Norris", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 11, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Victor G. Ogden, Sr.", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Richard Pacell", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 1, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "William H. Pierce", "county": "Delaware", "ageConviction": 49, "ageMerit": 70, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 5}, {"year": 2019, "date": "08/08/2019", "name": "Oscar R. Pinto", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "Clarence L. Robinson", "county": "Allegheny", "ageConviction": 25, "ageMerit": 50, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Bienvenido Junior Ruiz, Jr.", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Thomas J. Schilk", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "08/08/2019", "name": "David Sheppard, Sr.", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 6, "violent": 4}, {"year": 2019, "date": "08/08/2019", "name": "Charles W. Slaughter", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Larry H. Smalls", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 5, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Kirby Stewart", "county": "Lancaster", "ageConviction": 30, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "08/08/2019", "name": "Mageline G. Stewart", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 62, "sex": "Female", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "Robert E. Altland", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "David A. Bookman, III", "county": "Philadelphia", "ageConviction": 18, "ageMerit": 38, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 5, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "James E. Dorsey", "county": "Allegheny", "ageConviction": 18, "ageMerit": 44, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 2, "violent": 5}, {"year": 2019, "date": "11/07/2019", "name": "Reid Evans", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 3, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Wyatt Evans", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Dennis Horton", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 6, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Lee A. Horton", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 9, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Gary D. Jones", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "Sheena M. King", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 46, "sex": "Female", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "Robert L. Madison, Jr.", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 2, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "Anthony B. Mays", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 11, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Francisco M. Mojica, Jr.", "county": "Philadelphia", "ageConviction": 36, "ageMerit": 57, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2019, "date": "11/07/2019", "name": "Jose E. Nieves, Jr.", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "11/07/2019", "name": "Pedro J. Reynoso", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2019, "date": "11/07/2019", "name": "Jose N. Rodriguez", "county": "Philadelphia", "ageConviction": 36, "ageMerit": 49, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2019, "date": "11/07/2019", "name": "Charles J. Schrott, Jr.", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": null, "violent": null}, {"year": 2019, "date": "11/07/2019", "name": "Larry N. Stromberg", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 53, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2020, "date": "05/07/2020", "name": "Michael H. Ali", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2020, "date": "05/07/2020", "name": "Edwin Baez", "county": "Philadelphia", "ageConviction": 37, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "Wayne E. Brooks", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "George W. Burkhardt", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2020, "date": "05/07/2020", "name": "Jeffrey D. Clapsadl", "county": "Berks", "ageConviction": 25, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2020, "date": "05/07/2020", "name": "Edwin E. DeJesus", "county": "Philadelphia", "ageConviction": 38, "ageMerit": 75, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "Wayne R. Dixon", "county": "Lancaster", "ageConviction": 26, "ageMerit": 47, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 5, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "Avis L. Lee", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2020, "date": "05/07/2020", "name": "Joseph G. Nara, Sr.", "county": "Fayette", "ageConviction": 57, "ageMerit": 68, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 0, "violent": 2}, {"year": 2020, "date": "05/07/2020", "name": "Felix B. Rosado", "county": "Berks", "ageConviction": 19, "ageMerit": 42, "sex": "Male", "race": "White", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 0, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "David L. Slaughenhoupt", "county": "Mercer", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2020, "date": "05/07/2020", "name": "Gregory Stover", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  HG", "nonViolent": 2, "violent": 2}, {"year": 2020, "date": "05/07/2020", "name": "James J. Strapple, Jr.", "county": "Westmoreland", "ageConviction": 23, "ageMerit": 42, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2020, "date": "05/07/2020", "name": "Mildred B. Strickland", "county": "Philadelphia", "ageConviction": 53, "ageMerit": 74, "sex": "Female", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 1, "violent": 1}, {"year": 2020, "date": "05/07/2020", "name": "Robert W. Thomas", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JW", "nonViolent": null, "violent": null}, {"year": 2020, "date": "11/05/2020", "name": "Rose M. Dinkins", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2020, "date": "11/05/2020", "name": "Andre M. Gale", "county": "Dauphin", "ageConviction": 25, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2020, "date": "11/05/2020", "name": "Robert C. King, Jr.", "county": "Allegheny", "ageConviction": 30, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2020, "date": "11/05/2020", "name": "Heather Lavelle", "county": "Bucks", "ageConviction": 36, "ageMerit": 51, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 8, "violent": 6}, {"year": 2020, "date": "11/05/2020", "name": "Kawania M. McIntosh", "county": "Berks", "ageConviction": 32, "ageMerit": 60, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 10, "violent": 18}, {"year": 2020, "date": "11/05/2020", "name": "Kenny J. Stevenson", "county": "Allegheny", "ageConviction": 22, "ageMerit": 46, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "02/04/2021", "name": "John D. Brookins", "county": "Bucks", "ageConviction": 28, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  HG", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "02/04/2021", "name": "George G. Elliott", "county": "Crawford", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2021, "date": "02/04/2021", "name": "Irvin S. Moore", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 74, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2021, "date": "02/04/2021", "name": "Michael A. Scott", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 62, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 3, "violent": 1}, {"year": 2021, "date": "02/04/2021", "name": "Kennard Short", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 2, "violent": 2}, {"year": 2021, "date": "05/06/2021", "name": "Keeshond D. Cole", "county": "Lancaster", "ageConviction": 19, "ageMerit": 45, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2021, "date": "05/06/2021", "name": "Wayne R. Covington", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "05/06/2021", "name": "Denise E. Crump", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 56, "sex": "Female", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2021, "date": "05/06/2021", "name": "Marc C. Draper", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 1, "violent": 2}, {"year": 2021, "date": "05/06/2021", "name": "Jesse J. Faust", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "05/06/2021", "name": "Percy T. Johnson", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": null, "violent": null}, {"year": 2021, "date": "05/06/2021", "name": "Terry M. Kightlinger", "county": "Venango", "ageConviction": 19, "ageMerit": 41, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "05/06/2021", "name": "James A. Miller", "county": "Lehigh", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "05/06/2021", "name": "Gary A. Robinson", "county": "Beaver", "ageConviction": 27, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 2, "violent": 4}, {"year": 2021, "date": "05/06/2021", "name": "Phoebe L. Tomasek", "county": "Fayette", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": null, "violent": null}, {"year": 2021, "date": "05/06/2021", "name": "Harry O. Twiggs, Jr.", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "08/13/2021", "name": "Erin D. Canady", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 3)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Amir K. Cartair", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 51, "sex": "Male", "race": "Black", "vote": "(1 to 3)", "outlier": "Yes:  JF", "nonViolent": 1, "violent": 3}, {"year": 2021, "date": "08/13/2021", "name": "Anthony G. Eberhardt", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 1)", "outlier": "No:  JW", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Ralph C. Fegley, Jr.", "county": "Northumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 3)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Wade D. Hairston", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Stephen D. Knight", "county": "Allegheny", "ageConviction": 22, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "08/13/2021", "name": "Gary A. Kyles", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Melvin C. Mitchell, Jr.", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 1)", "outlier": "No:  JW", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Matthew J. Nichols", "county": "Montgomery", "ageConviction": 21, "ageMerit": 46, "sex": "Male", "race": "White", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": 3, "violent": 2}, {"year": 2021, "date": "08/13/2021", "name": "David A. Richardson", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 49, "sex": "Male", "race": "Black", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": 3, "violent": 2}, {"year": 2021, "date": "08/13/2021", "name": "Edward C. Silvis, Sr.", "county": "Armstrong", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Gregory A. Thomas", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": null, "violent": null}, {"year": 2021, "date": "08/13/2021", "name": "Jeffrey L. Watson", "county": "Philadelphia", "ageConviction": 36, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(2 to 2)", "outlier": "No:  JW, JS", "nonViolent": 1, "violent": 1}, {"year": 2021, "date": "08/13/2021", "name": "Nathaniel J. West", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(1 to 3)", "outlier": "Yes:  JF", "nonViolent": 2, "violent": 1}, {"year": 2021, "date": "08/13/2021", "name": "Doris D. Williamson", "county": "Philadelphia", "ageConviction": 38, "ageMerit": 66, "sex": "Female", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2021, "date": "09/22/2021", "name": "Cyd C. Berger", "county": "Allegheny", "ageConviction": 6, "ageMerit": 66, "sex": "Female", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  JW, HG", "nonViolent": null, "violent": null}, {"year": 2021, "date": "09/22/2021", "name": "Cheryl A. Casper", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 64, "sex": "Female", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 2, "violent": 1}, {"year": 2021, "date": "09/22/2021", "name": "David G. Johns", "county": "Indiana", "ageConviction": 37, "ageMerit": 64, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 3}, {"year": 2021, "date": "09/22/2021", "name": "Jose G. LaPorte", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 70, "sex": "Male", "race": "White", "vote": "(3 to 2)", "outlier": "No:  HG, JS", "nonViolent": 1, "violent": 1}, {"year": 2021, "date": "09/22/2021", "name": "Frank A. Metzger", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2021, "date": "09/22/2021", "name": "Alexis Rodriguez", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JW", "nonViolent": null, "violent": null}, {"year": 2021, "date": "10/28/2021", "name": "Leroy F. Cotton", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2021, "date": "10/28/2021", "name": "Harold Herrschaft", "county": "Bucks", "ageConviction": 33, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "10/28/2021", "name": "Thomas W. Jones, III", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 1, "violent": 2}, {"year": 2021, "date": "10/28/2021", "name": "David L. Lee", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2021, "date": "10/28/2021", "name": "Michael Lyons", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  HG", "nonViolent": null, "violent": null}, {"year": 2021, "date": "10/28/2021", "name": "Kerry L. McNeil", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 1, "violent": 1}, {"year": 2021, "date": "10/28/2021", "name": "Tracy A. Penrose", "county": "Westmoreland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "10/28/2021", "name": "Paul L. Powell, III", "county": "Luzerne", "ageConviction": 28, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2021, "date": "10/28/2021", "name": "Maria S. Rodriguez", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 64, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 4}, {"year": 2021, "date": "10/28/2021", "name": "Ronald L. Smith", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2021, "date": "10/28/2021", "name": "Carl R. Thompson", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2021, "date": "5/6/2021", "name": "Yvonne Cloud", "county": "Delaware", "ageConviction": 21, "ageMerit": 59, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2022, "date": "02/10/2022", "name": "David M. Allen", "county": "Clarion", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Robert Allen, Jr.", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 47, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 4}, {"year": 2022, "date": "02/10/2022", "name": "Gregory Bacon", "county": "Westmoreland", "ageConviction": 26, "ageMerit": 40, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Clay Caldwell", "county": "Philadelphia", "ageConviction": 36, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2022, "date": "02/10/2022", "name": "Terrell Carter", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2022, "date": "02/10/2022", "name": "Ronald J. Connolly", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Craig P. Datesman", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "William E. Decker", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Marilyn A. Dobrolenski", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Lynn E. Elms", "county": "Beaver", "ageConviction": 37, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 5}, {"year": 2022, "date": "02/10/2022", "name": "Christopher M. Fenati", "county": "Lawrence", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "James R. Jackson", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 74, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "02/10/2022", "name": "Lamon M. Jackson, Sr.", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 50, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "02/10/2022", "name": "Mario D. Maldonado", "county": "Northampton", "ageConviction": 21, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Donald H. Montgomery", "county": "Butler", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Larry E. Oates", "county": "Chester", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Judith A. Pomory", "county": "York", "ageConviction": 50, "ageMerit": 77, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Archie Rodriguez", "county": "Berks", "ageConviction": 23, "ageMerit": 50, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 2, "violent": 10}, {"year": 2022, "date": "02/10/2022", "name": "Stan S. Rosenthal", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(3 to 2)", "outlier": "No:  JW, HG", "nonViolent": 4, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Robert C. Taylor", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Kenneth M. Torbeck", "county": "Lehigh", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "02/10/2022", "name": "Donald Waters", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 73, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 3, "violent": 1}, {"year": 2022, "date": "02/10/2022", "name": "Todd A. Yohe", "county": "Dauphin", "ageConviction": 27, "ageMerit": 40, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2022, "date": "06/02/2022", "name": "Charles M. Adams", "county": "Fayette", "ageConviction": 35, "ageMerit": 73, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "David L. Allen", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Jeffrey D. Banks", "county": "Philadelphia", "ageConviction": 18, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 5, "violent": 3}, {"year": 2022, "date": "06/02/2022", "name": "Nelson B. Birdwell, III", "county": "Lehigh", "ageConviction": 19, "ageMerit": 45, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Ricky Brockington", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Henry A. Bruce, Jr.", "county": "Mercer", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Frank J. Bustard", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Kevin L. Charles", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Oscar A. Cintora", "county": "Chester", "ageConviction": 20, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  JF", "nonViolent": 0, "violent": 4}, {"year": 2022, "date": "06/02/2022", "name": "Darrell Colbert", "county": "Philadelphia", "ageConviction": 46, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "Charles L. Coley", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "William E. Cornish", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Abraham C. Cruz", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Michael F. Dean", "county": "Lehigh", "ageConviction": null, "ageMerit": 65, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 4}, {"year": 2022, "date": "06/02/2022", "name": "Robert J. Eak, Jr.", "county": "Pike", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Melony R. Ford", "county": "Allegheny", "ageConviction": 35, "ageMerit": 66, "sex": "Female", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Mark L. Guy, Sr.", "county": "Delaware", "ageConviction": 21, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2022, "date": "06/02/2022", "name": "David L. Hanna", "county": "Mercer", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "David A. Johnson", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 77, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2022, "date": "06/02/2022", "name": "Kerby K. Keller", "county": "Lancaster", "ageConviction": null, "ageMerit": 75, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Samuel Major", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "Ronald F. Milton", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "John P. Minarik", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "John J. Palmer", "county": "Montgomery", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Maximino C. Perez", "county": "Delaware", "ageConviction": 28, "ageMerit": 69, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "William T. Ramsey", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "James W. Riley", "county": "Franklin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "James A. Rivers", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Robert E. Robinson", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "Lance B. Rucker, Sr.", "county": "Allegheny", "ageConviction": 33, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 3, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Donald J. Russin, Jr.", "county": "Westmoreland", "ageConviction": 26, "ageMerit": 62, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Douglas W. Saunders, Jr.", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "Peter D. Shelbo", "county": "Northampton", "ageConviction": 19, "ageMerit": 63, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Matthew S. Slaughter", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 50, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "06/02/2022", "name": "Marvin C. Smith, Sr.", "county": "Cambria", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Gail T. Stallworth", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Gerald K. Teagle", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 2, "violent": 1}, {"year": 2022, "date": "06/02/2022", "name": "Darrell J. Van Mastrigt", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "06/02/2022", "name": "Aaron C. Wheeler, Sr.", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 9, "violent": 6}, {"year": 2022, "date": "06/02/2022", "name": "Randy C. Whitacre", "county": "Indiana", "ageConviction": 51, "ageMerit": 70, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, JF", "nonViolent": 5, "violent": 3}, {"year": 2022, "date": "06/02/2022", "name": "Harold T. Zook", "county": "Chester", "ageConviction": null, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 4}, {"year": 2022, "date": "10/13/2022", "name": "Nicholas V. Belgiorno", "county": "Delaware", "ageConviction": 26, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "George Booker", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Sylvia A. Boykin", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 64, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Ezra Bozeman", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Michael R. Bozzelli", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 57, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Tyrone Brand", "county": "Philadelphia", "ageConviction": 41, "ageMerit": 74, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 3, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Richard Brinson, Jr.", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JS", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Lena A. Brown", "county": "Allegheny", "ageConviction": 29, "ageMerit": 77, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Wallace B. Brown", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Celeste L. Coles", "county": "Wyoming", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Rafael Colon", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Lawrence Culberson, Jr.", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 1, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Mitchell D. DiVentura", "county": "Northampton", "ageConviction": 27, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Aaron D. Garrett", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 53, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Commer Glass", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 76, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Vincent J. Harp", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Richard Heary", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 6, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Brian Herb", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Charles E. Hiller", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 51, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 4}, {"year": 2022, "date": "10/13/2022", "name": "Calvin B. Johnson", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 65, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Eric C. Joseph", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 4}, {"year": 2022, "date": "10/13/2022", "name": "Loni E. Krick", "county": "Berks", "ageConviction": 29, "ageMerit": 59, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 6}, {"year": 2022, "date": "10/13/2022", "name": "Martin Lebron, Jr.", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 56, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 2, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Richard Mercado", "county": "Monroe", "ageConviction": 19, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 0, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Mark A. Mitchell, Sr.", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Jeffrey S. Morgan", "county": "Lebanon", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Charmaine L. Pfender", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Karen A. Phillips", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 54, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Wilfredo Portalatin", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Clifford G. Ransome", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Daniel Reid", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2022, "date": "10/13/2022", "name": "Joaquin R. Rodriguez", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 6, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Daniel Rosado, Jr.", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 56, "sex": "Male", "race": "White", "vote": "(4 to 1)", "outlier": "No:  MG", "nonViolent": 2, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Marsha L. Scaggs", "county": "Lawrence", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Willie Seals, Jr.", "county": "Philadelphia", "ageConviction": 44, "ageMerit": 83, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2022, "date": "10/13/2022", "name": "Debra R. Ward", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 63, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2022, "date": "10/13/2022", "name": "Carl Whitson", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2022, "date": "10/13/2022", "name": "Andre M. Wright", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "04/06/2023", "name": "Roberto V. Alvarez", "county": "Montgomery", "ageConviction": 26, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "04/06/2023", "name": "Francis J. Boyd", "county": "Philadelphia", "ageConviction": 50, "ageMerit": 74, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "04/06/2023", "name": "Norman E. Carder", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "04/06/2023", "name": "Frederick W. Clark", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 50, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 5}, {"year": 2023, "date": "04/06/2023", "name": "Thomas R. Craig", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "04/06/2023", "name": "Daryl L. Glasco", "county": "Chester", "ageConviction": 24, "ageMerit": 48, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "04/06/2023", "name": "George R. Halter, Jr.", "county": "Allegheny", "ageConviction": null, "ageMerit": 77, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "04/06/2023", "name": "William L. Mackneer", "county": "Cumberland", "ageConviction": 52, "ageMerit": 81, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 6}, {"year": 2023, "date": "04/06/2023", "name": "David L. Moore, Jr.", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2023, "date": "04/06/2023", "name": "Carl D. Selby", "county": "Philadelphia", "ageConviction": 37, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "04/06/2023", "name": "Gregory Thomas", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "04/06/2023", "name": "Jerry E. Wilson", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "John A. Askew", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Rose M. Boyd-Tolver", "county": "Berks", "ageConviction": 41, "ageMerit": 58, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2023, "date": "08/03/2023", "name": "Keith T. Brewington", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Albert R. Brown", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Charles E. Brown", "county": "Philadelphia", "ageConviction": 37, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Nicodemus L. Brown", "county": "Allegheny", "ageConviction": 21, "ageMerit": 43, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Stanley E. Brown", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Elizabeth Collazo", "county": "Northampton", "ageConviction": 43, "ageMerit": 54, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Roberto Cruz", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "08/03/2023", "name": "Tanya A. Dacri", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 55, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 10, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Robert F. Demon", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 62, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Cordell Dobson", "county": "Allegheny", "ageConviction": 31, "ageMerit": 63, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Louis Dottle, Jr.", "county": "Lawrence", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Domenic P. Florio", "county": "Delaware", "ageConviction": 46, "ageMerit": 87, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "NaCola D. Franklin", "county": "Lehigh", "ageConviction": 32, "ageMerit": 42, "sex": "Female", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  AD", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Jamil A. Gandy", "county": "Delaware", "ageConviction": 24, "ageMerit": 62, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Christopher G. Hanson", "county": "Lehigh", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Betty Heron", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Jimmy L. Herr", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Anthony D. Holmes", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "08/03/2023", "name": "Robert B. Jones", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 73, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Mark J. Kane", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 58, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Jacqueline J. Massey", "county": "Philadelphia", "ageConviction": 40, "ageMerit": 70, "sex": "Female", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 1, "violent": 3}, {"year": 2023, "date": "08/03/2023", "name": "Michael S. Mayo", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 2, "violent": 4}, {"year": 2023, "date": "08/03/2023", "name": "John McDowell, Jr.", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "John J. McIntyre", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 78, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2023, "date": "08/03/2023", "name": "Nathaniel Moore", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 75, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  JW", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Lorenzo J. Nichols", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 41, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "08/03/2023", "name": "Phillip O. Ocampo", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 3, "violent": 2}, {"year": 2023, "date": "08/03/2023", "name": "Warren P. Palmer", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 69, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "William M. Payne", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  AD", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Barry Perkins", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Daniel S. Petrichko", "county": "Schuylkill", "ageConviction": 26, "ageMerit": 46, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2023, "date": "08/03/2023", "name": "Scot A. Reinert", "county": "Lehigh", "ageConviction": 31, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Roland D. Scandle, Jr.", "county": "Lebanon", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "08/03/2023", "name": "Paul G. Schlueter, III", "county": "Northampton", "ageConviction": 25, "ageMerit": 62, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "08/03/2023", "name": "Harvey A. Tabron", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 0, "violent": 3}, {"year": 2023, "date": "11/02/2023", "name": "Richard R. Allen", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Richard G. Brant", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Roger F. Button", "county": "Tioga", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Troy Calhoun", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2023, "date": "11/02/2023", "name": "Eugene Cole", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Bruce A. Cooper", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2023, "date": "11/02/2023", "name": "DeWayne T. Curtis", "county": "Beaver", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Luis M. Davila Cruz", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Charles L. deBlois", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Randal E. Dietz", "county": "Berks", "ageConviction": 25, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2023, "date": "11/02/2023", "name": "Kristin M. Edmundson", "county": "Blair", "ageConviction": 22, "ageMerit": 42, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Thomas J. Huddleston", "county": "Centre", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Leonard Johnson", "county": "York", "ageConviction": 38, "ageMerit": 63, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Marcus Johnson", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2023, "date": "11/02/2023", "name": "Edward T. Logan", "county": "Cambria", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Troy J. Mayer", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 60, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 7}, {"year": 2023, "date": "11/02/2023", "name": "Robert W. Mcfarlane", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 56, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Gary G. McWhorter", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Andrew M. Olock, Jr.", "county": "Montgomery", "ageConviction": 19, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "William E. Pardee", "county": "Crawford", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Alphonse J. Pritchard", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Jennifer A. Rhodes", "county": "Allegheny", "ageConviction": 32, "ageMerit": 65, "sex": "Female", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  AD", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Ondre' Richburg", "county": "Mercer", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Hakeim M. Robinson, Sr.", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Jeffrey N. Ross", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Michael G. Scarbrough", "county": "Washington", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Nathan K. Scott", "county": "Montgomery", "ageConviction": 37, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 6, "violent": 2}, {"year": 2023, "date": "11/02/2023", "name": "Warren B. Sexton", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2023, "date": "11/02/2023", "name": "Robert W. Singleton", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 60, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2023, "date": "11/02/2023", "name": "Stephen Sprull", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 34, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Eugene Stewart", "county": "Philadelphia", "ageConviction": 47, "ageMerit": 75, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Bryan L. Walter", "county": "Bedford", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2023, "date": "11/02/2023", "name": "Gilbert R. Williams", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2023, "date": "11/02/2023", "name": "William K. Yarbough", "county": "Allegheny", "ageConviction": 24, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2023, "date": "11/02/2023", "name": "Dawud Y. A. Zaahir", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "George W. Brooks", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "James E. Brown", "county": "Philadelphia", "ageConviction": 34, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 4}, {"year": 2024, "date": "02/23/2024", "name": "Bruce B. Bussey", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Joel D. Carl", "county": "Lehigh", "ageConviction": 29, "ageMerit": 49, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "02/23/2024", "name": "Gregory L. Castaphney", "county": "Allegheny", "ageConviction": 29, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "02/23/2024", "name": "Alberto Castillo, Jr.", "county": "Lehigh", "ageConviction": 28, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "02/23/2024", "name": "Kevin L. Coleman", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "JW", "nonViolent": 1, "violent": 4}, {"year": 2024, "date": "02/23/2024", "name": "Tommy R. Copeland", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Steven R. Donbach", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Rafael Droz", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 55, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "02/23/2024", "name": "Joseph D. Faraci", "county": "Bucks", "ageConviction": 23, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "02/23/2024", "name": "Jorge L. Fraticelli", "county": "Delaware", "ageConviction": 19, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 3, "violent": 6}, {"year": 2024, "date": "02/23/2024", "name": "Keith M. Knight", "county": "Adams", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Fitzgerald Lawrence", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2024, "date": "02/23/2024", "name": "Anthony L. Patton", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Amy B. Pencille", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No: MH", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Larry Stephenson", "county": "Delaware", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "James Sullivan", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 77, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "02/23/2024", "name": "Edward J. Wright", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "02/23/2024", "name": "Shelby W. Zablotny", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(5 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Barry J. Alton", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Martin D. Appel", "county": "Northampton", "ageConviction": 43, "ageMerit": 65, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 8, "violent": 7}, {"year": 2024, "date": "07/11/2024", "name": "Robert Bishop", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 5}, {"year": 2024, "date": "07/11/2024", "name": "Michael A. Boyce", "county": "Butler", "ageConviction": null, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Richard Canady", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Andre L. Cohen", "county": "Allegheny", "ageConviction": 21, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Troy D. Coleman", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 6, "violent": 6}, {"year": 2024, "date": "07/11/2024", "name": "Luis A. Correa", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Allen E. Davis", "county": "Northampton", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "John W. Davis, Jr.", "county": "Delaware", "ageConviction": 22, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 8}, {"year": 2024, "date": "07/11/2024", "name": "Anthony DeLoatch", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Charles K. Diggs", "county": "Philadelphia", "ageConviction": 43, "ageMerit": 73, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Paul C. Drayton", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Michael W. Dukes", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  AD", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Mark J. Eckles", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 58, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Dorothy R. Farbo", "county": "Cambria", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Tameka D. Flowers", "county": "Lackawanna", "ageConviction": 23, "ageMerit": 50, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 8}, {"year": 2024, "date": "07/11/2024", "name": "Tammy L. Gallagher", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Leon T. Garland", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Marcus C. Gay, II", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Donald Gibson", "county": "Bucks", "ageConviction": 22, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "James D. Gillin, Sr.", "county": "Fayette", "ageConviction": 53, "ageMerit": 76, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Javier L. Gonzales", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 52, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "James D. Hardin", "county": "Beaver", "ageConviction": 34, "ageMerit": 71, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Warren E. Henderson", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 63, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Dolly S. Hendrickes", "county": "Dauphin", "ageConviction": 38, "ageMerit": 43, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Merle W. Hoag", "county": "Erie", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Maureen E. Hollie", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Henry G. Holmes", "county": "Lehigh", "ageConviction": 26, "ageMerit": 55, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 5, "violent": 8}, {"year": 2024, "date": "07/11/2024", "name": "Daniel M. Howard", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Helen L. Huffman", "county": "Mercer", "ageConviction": 32, "ageMerit": 64, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 6}, {"year": 2024, "date": "07/11/2024", "name": "Edgar M. Hurlburt, Jr.", "county": "Snyder", "ageConviction": 28, "ageMerit": 59, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Malcolm Johnson", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Lori A. Lassiter", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 61, "sex": "Female", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "London B. Linton", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 6, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Marcus Lloyd", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 45, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Gregory Lowe", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 68, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Jeffrey M. Maddox", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Janet L. Martin", "county": "Montgomery", "ageConviction": 35, "ageMerit": 73, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Rodney McCullough", "county": "Philadelphia", "ageConviction": 31, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Edward D. McDevitt, Jr.", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 61, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Robert L. Middleton, Jr.", "county": "Venango", "ageConviction": 23, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 10, "violent": 5}, {"year": 2024, "date": "07/11/2024", "name": "James B. Miles", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 87, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Phu D. Nguyen", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 53, "sex": "Male", "race": "Asian/Pacific Islander", "vote": "(4 to 1)", "outlier": "No:  MG", "nonViolent": 1, "violent": 5}, {"year": 2024, "date": "07/11/2024", "name": "Rene Ortiz", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Luis A. Pagan", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 45, "sex": "Male", "race": "White", "vote": "(5 to 0)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Jeffrey D. Peterson", "county": "Crawford", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Thomas B. Resuta", "county": "Berks", "ageConviction": 38, "ageMerit": 67, "sex": "Male", "race": "White", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 5}, {"year": 2024, "date": "07/11/2024", "name": "James R. W. E. Robinson", "county": "Cumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "J. T. Sanders, Jr.", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 44, "sex": "Male", "race": "Black", "vote": "(3 to 2)", "outlier": "No:  MG, JW", "nonViolent": 6, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Dean A. Sasanko", "county": "Allegheny", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Marie L. Seilhamer", "county": "Blair", "ageConviction": 42, "ageMerit": 21, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Jeffrey A. Shockley", "county": "Philadelphia", "ageConviction": 38, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Angel Soto", "county": "Northampton", "ageConviction": 34, "ageMerit": 62, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Vincent Spencer", "county": "Philadelphia", "ageConviction": 33, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Herndon R. Steele", "county": "Philadelphia", "ageConviction": 60, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 5, "violent": 8}, {"year": 2024, "date": "07/11/2024", "name": "Jessica L. Strohl", "county": "Lehigh", "ageConviction": 23, "ageMerit": 53, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 7}, {"year": 2024, "date": "07/11/2024", "name": "Larry Sturgis", "county": "Philadelphia", "ageConviction": 38, "ageMerit": 75, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Albert J. Thomas, IV", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 47, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Brian T. Trimble", "county": "Cumberland", "ageConviction": 28, "ageMerit": 48, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Virgil Tuttle", "county": "Wayne", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Russell L. Vance", "county": "Philadelphia", "ageConviction": 43, "ageMerit": 79, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Humberto Villavicencio", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Thomas S. Washam", "county": "Delaware", "ageConviction": 21, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Ronald Q. Waumbeeka", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Diane M. Weaver", "county": "Cumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  JW", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Lawrence G. Wells", "county": "Philadelphia", "ageConviction": 35, "ageMerit": 78, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Jacqueline White", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 67, "sex": "Female", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Daniel C. Williams, Jr.", "county": "Philadelphia", "ageConviction": 30, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "07/11/2024", "name": "Gene M. Wilson", "county": "Erie", "ageConviction": 20, "ageMerit": 41, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "07/11/2024", "name": "Larry Wilson", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "William J. Wilson", "county": "Allegheny", "ageConviction": 25, "ageMerit": 54, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Arthur L. Wolfe, III", "county": "Cumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Roger J. Woo", "county": "Westmoreland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "07/11/2024", "name": "Teryl L. Wyrick", "county": "Delaware", "ageConviction": 43, "ageMerit": 73, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2024, "date": "07/11/2024", "name": "Craig L. Young", "county": "Indiana", "ageConviction": 25, "ageMerit": 62, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 4}, {"year": 2024, "date": "07/11/2024", "name": "Jeffrey L. Zimmerman", "county": "Schuylkill", "ageConviction": 47, "ageMerit": 64, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 12}, {"year": 2024, "date": "11/07/2024", "name": "Mauricio J. Bedolla-Camacho", "county": "Chester", "ageConviction": 29, "ageMerit": 42, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Eric T. Jones", "county": "Monroe", "ageConviction": 31, "ageMerit": 38, "sex": "Unknown", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Raymond C. Rowe", "county": "Lancaster", "ageConviction": 50, "ageMerit": 56, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 6}, {"year": 2024, "date": "11/07/2024", "name": "Sharif W. Abdul-Rashid", "county": "Lancaster", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "11/07/2024", "name": "William P. Alston", "county": "Bucks", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "11/07/2024", "name": "Bennie L. Anderson, Jr.", "county": "Philadelphia", "ageConviction": 25, "ageMerit": 70, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "William Bastone", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 78, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Tracy R. Bradley", "county": "York", "ageConviction": 48, "ageMerit": 60, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Antonio J. Bundy", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 67, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 2}, {"year": 2024, "date": "11/07/2024", "name": "Jerome Burnam", "county": "Allegheny", "ageConviction": 32, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "11/07/2024", "name": "Herman M. Davenport", "county": "Montgomery", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "11/07/2024", "name": "Jevon A. Everett", "county": "Allegheny", "ageConviction": 25, "ageMerit": 42, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Charles V. Fountain", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": null, "violent": null}, {"year": 2024, "date": "11/07/2024", "name": "Vincent M. Hatcher", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 44, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 2}, {"year": 2024, "date": "11/07/2024", "name": "Irving B. Jefferson", "county": "Philadelphia                (Continued)", "ageConviction": 20, "ageMerit": 75, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "11/07/2024", "name": "Richard C. Kelly", "county": "Allegheny", "ageConviction": 24, "ageMerit": 50, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Kevin P. Le", "county": "Montgomery", "ageConviction": 28, "ageMerit": 56, "sex": "Male", "race": "Asian/Pacific Islander", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Darrell N. McKelvie", "county": "Philadelphia", "ageConviction": 19, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 5}, {"year": 2024, "date": "11/07/2024", "name": "Albino R. Muro", "county": "Allegheny", "ageConviction": 40, "ageMerit": 65, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Nicole Newell", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 47, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Charles E. Oberg", "county": "York", "ageConviction": 34, "ageMerit": 68, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Julio E. Ortiz", "county": "Lehigh", "ageConviction": 25, "ageMerit": 47, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Edward C. Peterson", "county": "Philadelphia", "ageConviction": 45, "ageMerit": 79, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "11/07/2024", "name": "Joseph Ramirez", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 74, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "James S. Rivers", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 4, "violent": 10}, {"year": 2024, "date": "11/07/2024", "name": "Paul M. Russell", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 52, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Charles W. Slaughter", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 72, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "Leroy A. Smith", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 68, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 4}, {"year": 2024, "date": "11/07/2024", "name": "Gregory Stephens", "county": "Dauphin", "ageConviction": 20, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "11/07/2024", "name": "James W. Taylor", "county": "Philadelphia", "ageConviction": 32, "ageMerit": 83, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  MH", "nonViolent": 0, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Donald L. Washington, II", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2024, "date": "11/07/2024", "name": "James M. Weakland", "county": "Chester", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 2, "violent": 3}, {"year": 2024, "date": "11/07/2024", "name": "Brittany L. Williams", "county": "Allegheny", "ageConviction": 20, "ageMerit": 41, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2024, "date": "11/7/2024", "name": "Franklin D. Virgili, Jr.", "county": "Greene", "ageConviction": 27, "ageMerit": 55, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 3}, {"year": 2024, "date": "2/23/2024", "name": "Steven M. Bailey", "county": "Allegheny", "ageConviction": 23, "ageMerit": 42, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 5}, {"year": 2024, "date": "2/23/2024", "name": "Wayne N. Battle", "county": "Philadelphia", "ageConviction": 29, "ageMerit": 79, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "MH", "nonViolent": 0, "violent": 1}, {"year": 2024, "date": "2/23/2024", "name": "Karen D. Groom", "county": "Philadelphia", "ageConviction": 28, "ageMerit": 59, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2024, "date": "2/23/2024", "name": "Herbert D. Hardwick", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 64, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 3}, {"year": 2024, "date": "7/11/2024", "name": "George E. Austin", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 66, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Sam Bannerman", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "William C. Bartlett", "county": "Montgomery", "ageConviction": null, "ageMerit": null, "sex": "Male", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "Oscar E. Brown", "county": "Allegheny", "ageConviction": 20, "ageMerit": 39, "sex": "Male", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Sean J. Burton", "county": "Delaware", "ageConviction": 43, "ageMerit": 57, "sex": "Male", "race": "Black", "vote": "(0 to 4)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Kevin L. Charles", "county": "Allegheny", "ageConviction": 20, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(4 to 0)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Randall H. Chumley", "county": "Lawrence", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(0 to 4)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "Carl S. Daniels", "county": "Philadelphia", "ageConviction": 21, "ageMerit": 56, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Terry A. Dreibelbis", "county": "Berks", "ageConviction": 29, "ageMerit": 77, "sex": "Male", "race": "Unknown", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Tequilla A. Fields", "county": "Allegheny", "ageConviction": null, "ageMerit": 53, "sex": "Female", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": null, "violent": 4}, {"year": 2025, "date": "03/06/2025", "name": "Willis Garvin", "county": "Philadelphia                (Continued)", "ageConviction": 27, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "", "outlier": "", "nonViolent": 2, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Cynthia M. Gonzalez", "county": "Dauphin", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(1 to 4)", "outlier": "Yes:  MG", "nonViolent": 3, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Gary D. Gully", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 61, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 4}, {"year": 2025, "date": "03/06/2025", "name": "Dannielle T. Hadley", "county": "Philadelphia", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 1)", "outlier": "No:  DS", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "Calvin C. Logan, Jr.", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 77, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 7, "violent": 4}, {"year": 2025, "date": "03/06/2025", "name": "Robert L. Madison, Jr.", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 69, "sex": "Male", "race": "Black", "vote": "(2 to 3)", "outlier": "Yes:  MG, AD", "nonViolent": 2, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Thomas B. Mathis", "county": "Northampton", "ageConviction": 21, "ageMerit": 74, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  DS", "nonViolent": 3, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "John J. McAndrews", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 69, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Victor G. Ogden, Sr.", "county": "York", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(4 to 0)", "outlier": "", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "George A. Padilla, Sr.", "county": "Philadelphia", "ageConviction": 26, "ageMerit": 60, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 4, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Edward C. Printup", "county": "Cumberland", "ageConviction": null, "ageMerit": null, "sex": "Unknown", "race": "Unknown", "vote": "(3 to 2)", "outlier": "No:  MG, DS", "nonViolent": null, "violent": null}, {"year": 2025, "date": "03/06/2025", "name": "Nancy I. Rosario", "county": "Lancaster", "ageConviction": 34, "ageMerit": 63, "sex": "Female", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Jamie L. Ruiz", "county": "Philadelphia", "ageConviction": 47, "ageMerit": 83, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Fidel Santiago", "county": "Philadelphia", "ageConviction": 23, "ageMerit": 53, "sex": "Male", "race": "White", "vote": "", "outlier": "", "nonViolent": 3, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Marie Scott", "county": "Philadelphia", "ageConviction": 20, "ageMerit": 71, "sex": "Female", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Larry Shaw", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 65, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Larry H. Smalls", "county": "Philadelphia", "ageConviction": 24, "ageMerit": 78, "sex": "Male", "race": "Black", "vote": "(1 to 4)", "outlier": "Yes:  AD", "nonViolent": 1, "violent": 5}, {"year": 2025, "date": "03/06/2025", "name": "Richard A. Smith", "county": "Philadelphia", "ageConviction": 27, "ageMerit": 59, "sex": "Male", "race": "Black", "vote": "(0 to 5)", "outlier": "", "nonViolent": 1, "violent": 2}, {"year": 2025, "date": "03/06/2025", "name": "Zaqueo Velez", "county": "Philadelphia", "ageConviction": 36, "ageMerit": 76, "sex": "Male", "race": "White", "vote": "(0 to 5)", "outlier": "", "nonViolent": 0, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Michael E. Washington", "county": "Philadelphia", "ageConviction": 41, "ageMerit": 71, "sex": "Male", "race": "Black", "vote": "(4 to 1)", "outlier": "No:  DS", "nonViolent": 2, "violent": 1}, {"year": 2025, "date": "03/06/2025", "name": "Ronald G. Weaver", "county": "Philadelphia", "ageConviction": 22, "ageMerit": 66, "sex": "Male", "race": "Black", "vote": "(5 to 0)", "outlier": "", "nonViolent": 4, "violent": 3}];
+
+    // Board member full names
+    const memberNames = {
+      'AD': 'Austin Davis',
+      'MG': 'Marvin Goodwin', 
+      'JF': 'John Fetterman',
+      'HG': 'Harris Gubernick',
+      'JS': 'Josh Shapiro',
+      'JW': 'John Wetzel',
+      'KK': 'Kathleen Kane',
+      'LW': 'Lloyd White',
+      'MS': 'Mike Stack',
+      'MH': 'Michelle Henry',
+      'DS': 'Dave Sunday'
+    };
+
+    // Process data
+    function parseVote(voteStr) {
+      if (!voteStr) return { votesFor: 0, votesAgainst: 0 };
+      const match = voteStr.match(/\((\d+)\s*to\s*(\d+)\)/);
+      if (match) {
+        return { votesFor: parseInt(match[1]), votesAgainst: parseInt(match[2]) };
+      }
+      return { votesFor: 0, votesAgainst: 0 };
     }
 
-    const {
-      BarChart,
-      Bar,
-      XAxis,
-      YAxis,
-      CartesianGrid,
-      Tooltip,
-      ResponsiveContainer
-    } = window.Recharts;
+    const processedData = rawData.map(row => {
+      const { votesFor, votesAgainst } = parseVote(row.vote);
+      return {
+        ...row,
+        votesFor,
+        votesAgainst,
+        outcome: votesFor > votesAgainst ? 'Approved' : 'Denied',
+        hasOutlier: row.outlier !== '',
+        timeServed: row.ageMerit && row.ageConviction ? row.ageMerit - row.ageConviction : null,
+      };
+    });
 
-    function PardonsAnalysis() {
-      const [selectedMetric, setSelectedMetric] = React.useState('race');
+    // Populate year filter
+    const years = [...new Set(processedData.map(d => d.year))].sort();
+    const yearSelect = document.getElementById('yearFilter');
+    years.forEach(year => {
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      yearSelect.appendChild(option);
+    });
 
-      const rawData = `04/06/2023,Roberto V. Alvarez,Montgomery,26,59,Male,White,(0 to 5),,2,1
-04/06/2023,Francis J. Boyd,Philadelphia,50,74,Male,White,(0 to 5),,2,2
-04/06/2023,Frederick W. Clark,Philadelphia,29,50,Male,Black,(0 to 5),,1,5
-04/06/2023,Daryl L. Glasco,Chester,24,48,Male,Black,(0 to 5),,0,1
-04/06/2023,William L. Mackneer,Cumberland,52,81,Female,White,(0 to 5),,0,6
-04/06/2023,David L. Moore Jr.,Allegheny,,,,,(1 to 4),MG,,
-04/06/2023,Carl D. Selby,Philadelphia,37,61,Male,Black,(0 to 5),,1,1
-08/03/2023,Rose M. Boyd-Tolver,Berks,41,58,Female,Black,(0 to 5),,1,3
-08/03/2023,Keith T. Brewington,Philadelphia,28,55,Male,Black,(0 to 5),,1,1
-08/03/2023,Albert R. Brown,Philadelphia,23,72,Male,Black,(5 to 0),,1,1
-08/03/2023,Charles E. Brown,Philadelphia,37,67,Male,Black,(0 to 5),,1,1
-08/03/2023,Nicodemus L. Brown,Allegheny,21,43,Male,Black,(0 to 5),,0,1
-08/03/2023,Elizabeth Collazo,Northampton,43,54,Female,White,(0 to 5),,0,1
-08/03/2023,Roberto Cruz,Philadelphia,30,68,Male,White,(0 to 5),,2,2
-08/03/2023,Tanya A. Dacri,Philadelphia,21,55,Female,White,(0 to 5),,10,1
-08/03/2023,Robert F. Demon,Philadelphia,24,62,Male,Black,(0 to 5),,2,1`;
+    // Populate county filter
+    const counties = [...new Set(processedData.map(d => d.county).filter(c => c))].sort();
+    const countySelect = document.getElementById('countyFilter');
+    counties.forEach(county => {
+      const option = document.createElement('option');
+      option.value = county;
+      option.textContent = county;
+      countySelect.appendChild(option);
+    });
 
-      const cases = rawData.split('
-').map(line => {
-        const p = line.split(',');
-        return {
-          race: p[6],
-          sex: p[5],
-          violent: p[10] ? parseInt(p[10]) : 0,
-          vote: p[7],
-          timeServed: p[3] && p[4] ? parseInt(p[4]) - parseInt(p[3]) : null
-        };
-      }).filter(c => c.vote === '(0 to 5)');
+    // Chart instances
+    let voteChart, outcomeChart, raceChart, memberChart, ageChart, timeChart, violentChart;
 
-      const analysis = { byRace:{}, bySex:{}, byViolent:{}, byTime:{} };
+    // Filter and update
+    function getFilteredData() {
+      const year = document.getElementById('yearFilter').value;
+      const race = document.getElementById('raceFilter').value;
+      const sex = document.getElementById('sexFilter').value;
+      const county = document.getElementById('countyFilter').value;
+      
+      return processedData.filter(d => {
+        if (year !== 'All' && d.year !== parseInt(year)) return false;
+        if (race !== 'All' && d.race !== race) return false;
+        if (sex !== 'All' && d.sex !== sex) return false;
+        if (county !== 'All' && d.county !== county) return false;
+        return true;
+      });
+    }
 
-      cases.forEach(c => {
-        if (c.race) analysis.byRace[c.race] = (analysis.byRace[c.race] || 0) + 1;
-        if (c.sex) analysis.bySex[c.sex] = (analysis.bySex[c.sex] || 0) + 1;
+    function extractMembers(outlier) {
+      if (!outlier) return [];
+      return outlier.match(/[A-Z]{2}/g) || [];
+    }
 
-        const v = c.violent === 0 ? 'No violent charges'
-                : c.violent === 1 ? '1 violent charge'
-                : '2+ violent charges';
-        analysis.byViolent[v] = (analysis.byViolent[v] || 0) + 1;
-
-        if (c.timeServed) {
-          const t = c.timeServed < 25 ? '<25 years'
-                  : c.timeServed < 35 ? '25–34 years'
-                  : '35+ years';
-          analysis.byTime[t] = (analysis.byTime[t] || 0) + 1;
+    function updateDashboard() {
+      const data = getFilteredData();
+      
+      // Stats
+      const total = data.length;
+      const approved = data.filter(d => d.outcome === 'Approved').length;
+      const denied = data.filter(d => d.outcome === 'Denied').length;
+      const split = data.filter(d => d.hasOutlier).length;
+      const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : 0;
+      const splitRate = total > 0 ? ((split / total) * 100).toFixed(1) : 0;
+      
+      document.getElementById('totalCases').textContent = total;
+      document.getElementById('approvedCases').textContent = approved;
+      document.getElementById('deniedCases').textContent = denied;
+      document.getElementById('splitVotes').textContent = split;
+      document.getElementById('approvalRate').textContent = `${approvalRate}% approval rate`;
+      document.getElementById('denialRate').textContent = `${(100 - approvalRate).toFixed(1)}% denial rate`;
+      document.getElementById('splitRate').textContent = `${splitRate}% of cases`;
+      
+      // Unknown data count
+      const unknownCount = data.filter(d => d.race === 'Unknown' || d.sex === 'Unknown' || d.ageMerit === null).length;
+      const unknownPercent = total > 0 ? ((unknownCount / total) * 100).toFixed(0) : 0;
+      document.getElementById('unknownCount').textContent = unknownCount;
+      document.getElementById('totalForUnknown').textContent = total;
+      document.getElementById('unknownPercent').textContent = unknownPercent + '%';
+      
+      // Vote distribution
+      const voteDist = {};
+      data.forEach(d => { voteDist[d.vote] = (voteDist[d.vote] || 0) + 1; });
+      const voteLabels = Object.keys(voteDist).sort((a, b) => {
+        const aMatch = a.match(/\((\d+)/);
+        const bMatch = b.match(/\((\d+)/);
+        return (bMatch ? parseInt(bMatch[1]) : 0) - (aMatch ? parseInt(aMatch[1]) : 0);
+      });
+      const voteCounts = voteLabels.map(l => voteDist[l]);
+      
+      if (voteChart) voteChart.destroy();
+      voteChart = new Chart(document.getElementById('voteChart'), {
+        type: 'bar',
+        data: {
+          labels: voteLabels,
+          datasets: [{
+            data: voteCounts,
+            backgroundColor: '#1a365d',
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { display: false } }
+          }
         }
       });
-
-      const metric = selectedMetric === 'race' ? analysis.byRace
-                    : selectedMetric === 'sex' ? analysis.bySex
-                    : selectedMetric === 'violent' ? analysis.byViolent
-                    : analysis.byTime;
-
-      const chartData = Object.entries(metric).map(([k,v]) => ({ category:k, count:v }));
-
-      return React.createElement('div',{className:'p-6 max-w-7xl mx-auto'},
-        React.createElement('h1',{className:'text-3xl font-bold mb-2'},'Pennsylvania Board of Pardons Voting Patterns'),
-        React.createElement('select',{className:'border px-3 py-2 rounded mb-4',value:selectedMetric,onChange:e=>setSelectedMetric(e.target.value)},
-          React.createElement('option',{value:'race'},'Race'),
-          React.createElement('option',{value:'sex'},'Sex'),
-          React.createElement('option',{value:'violent'},'Violent Charges'),
-          React.createElement('option',{value:'timeServed'},'Time Served')
-        ),
-        React.createElement(ResponsiveContainer,{width:'100%',height:320},
-          React.createElement(BarChart,{data:chartData},
-            React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),
-            React.createElement(XAxis,{dataKey:'category'}),
-            React.createElement(YAxis,null),
-            React.createElement(Tooltip,null),
-            React.createElement(Bar,{dataKey:'count',fill:'#2563eb'})
-          )
-        )
-      );
+      
+      // Outcome pie
+      if (outcomeChart) outcomeChart.destroy();
+      outcomeChart = new Chart(document.getElementById('outcomeChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Approved', 'Denied'],
+          datasets: [{
+            data: [approved, denied],
+            backgroundColor: ['#38a169', '#e53e3e'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+      
+      // Race breakdown
+      const raceStats = {};
+      data.forEach(d => {
+        if (!raceStats[d.race]) raceStats[d.race] = { approved: 0, denied: 0 };
+        if (d.outcome === 'Approved') raceStats[d.race].approved++;
+        else raceStats[d.race].denied++;
+      });
+      const raceLabels = ['Black', 'White', 'Asian/Pacific Islander', 'Unknown'].filter(r => raceStats[r]);
+      
+      if (raceChart) raceChart.destroy();
+      raceChart = new Chart(document.getElementById('raceChart'), {
+        type: 'bar',
+        data: {
+          labels: raceLabels,
+          datasets: [
+            { label: 'Approved', data: raceLabels.map(r => raceStats[r]?.approved || 0), backgroundColor: '#38a169', borderRadius: 4 },
+            { label: 'Denied', data: raceLabels.map(r => raceStats[r]?.denied || 0), backgroundColor: '#e53e3e', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#e2e8f0' } }
+          }
+        }
+      });
+      
+      // Board member analysis - collect all members dynamically
+      const memberStats = {};
+      data.forEach(d => {
+        extractMembers(d.outlier).forEach(m => {
+          if (!memberStats[m]) memberStats[m] = [];
+          memberStats[m].push(d);
+        });
+      });
+      
+      // Sort members by dissent count
+      const sortedMembers = Object.keys(memberStats).sort((a, b) => memberStats[b].length - memberStats[a].length);
+      
+      // Generate member cards dynamically
+      const container = document.getElementById('memberCardsContainer');
+      container.innerHTML = '';
+      
+      const memberColors = {
+        'MG': 'mg', 'AD': 'ad', 'JW': 'jw', 'HG': 'hg', 'JS': 'js',
+        'KK': 'kk', 'LW': 'lw', 'MH': 'mh', 'DS': 'ds', 'JF': 'jf', 'MS': 'ms'
+      };
+      
+      sortedMembers.forEach(member => {
+        const cases = memberStats[member];
+        const colorClass = memberColors[member] || 'mg';
+        
+        // Determine if primarily Yes or No dissenter
+        const yesCount = cases.filter(c => c.outlier.toLowerCase().includes('yes')).length;
+        const noCount = cases.filter(c => c.outlier.toLowerCase().includes('no')).length;
+        const isYesVoter = yesCount >= noCount;
+        
+        // Calculate patterns
+        const byRace = {}, bySex = {};
+        let lowViolent = 0, highViolent = 0, younger = 0, older = 0;
+        
+        cases.forEach(c => {
+          if (c.race !== 'Unknown') byRace[c.race] = (byRace[c.race] || 0) + 1;
+          if (c.sex !== 'Unknown') bySex[c.sex] = (bySex[c.sex] || 0) + 1;
+          if (c.violent !== null) {
+            if (c.violent <= 2) lowViolent++;
+            else highViolent++;
+          }
+          if (c.ageMerit !== null) {
+            if (c.ageMerit < 60) younger++;
+            else older++;
+          }
+        });
+        
+        const card = document.createElement('div');
+        card.className = `member-card ${colorClass}`;
+        card.innerHTML = `
+          <div class="member-header">
+            <div>
+              <div class="member-name ${colorClass}">${member}${memberNames[member] ? ' (' + memberNames[member] + ')' : ''}</div>
+              <div class="member-subtitle">${isYesVoter ? 'Voted Yes on denied cases' : 'Dissented on approvals'}</div>
+            </div>
+            <div class="member-badge ${colorClass}">${cases.length} dissenting votes</div>
+          </div>
+          <div class="pattern-grid">
+            <div class="pattern-box">
+              <div class="title">By Race</div>
+              <div class="content">${Object.entries(byRace).map(([r,c]) => `${r}: ${c}`).join('<br>') || 'No data'}</div>
+            </div>
+            <div class="pattern-box">
+              <div class="title">By Sex</div>
+              <div class="content">${Object.entries(bySex).map(([s,c]) => `${s}: ${c}`).join('<br>') || 'No data'}</div>
+            </div>
+            <div class="pattern-box">
+              <div class="title">Violence Level</div>
+              <div class="content">1-2 charges: ${lowViolent}<br>3+ charges: ${highViolent}</div>
+            </div>
+            <div class="pattern-box">
+              <div class="title">Age at Review</div>
+              <div class="content">Under 60: ${younger}<br>60+: ${older}</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      
+      // Member chart
+      const memberChartColors = sortedMembers.map(m => {
+        const colors = {
+          'MG': '#805ad5', 'AD': '#d69e2e', 'JW': '#3182ce', 'HG': '#38a169',
+          'JS': '#e53e3e', 'KK': '#ed8936', 'LW': '#319795', 'MH': '#d53f8c',
+          'DS': '#667eea', 'JF': '#48bb78', 'MS': '#9f7aea'
+        };
+        return colors[m] || '#805ad5';
+      });
+      
+      if (memberChart) memberChart.destroy();
+      memberChart = new Chart(document.getElementById('memberChart'), {
+        type: 'bar',
+        data: {
+          labels: sortedMembers.map(m => m + (memberNames[m] ? ' (' + memberNames[m] + ')' : '')),
+          datasets: [{
+            data: sortedMembers.map(m => memberStats[m].length),
+            backgroundColor: memberChartColors,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#e2e8f0' } }
+          }
+        }
+      });
+      
+      // Age analysis
+      const ageGroups = { '30-45': {t:0,a:0}, '46-60': {t:0,a:0}, '61-75': {t:0,a:0}, '76+': {t:0,a:0} };
+      data.filter(d => d.ageMerit).forEach(d => {
+        let g = d.ageMerit <= 45 ? '30-45' : d.ageMerit <= 60 ? '46-60' : d.ageMerit <= 75 ? '61-75' : '76+';
+        ageGroups[g].t++;
+        if (d.outcome === 'Approved') ageGroups[g].a++;
+      });
+      
+      if (ageChart) ageChart.destroy();
+      ageChart = new Chart(document.getElementById('ageChart'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(ageGroups),
+          datasets: [
+            { label: 'Total', data: Object.values(ageGroups).map(g => g.t), backgroundColor: '#718096', borderRadius: 4 },
+            { label: 'Approved', data: Object.values(ageGroups).map(g => g.a), backgroundColor: '#38a169', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: { x: { grid: { display: false } }, y: { grid: { color: '#e2e8f0' } } }
+        }
+      });
+      
+      // Time served
+      const timeGroups = { '10-20 years': {t:0,a:0}, '21-30 years': {t:0,a:0}, '31-40 years': {t:0,a:0}, '40+ years': {t:0,a:0} };
+      data.filter(d => d.timeServed).forEach(d => {
+        let g = d.timeServed <= 20 ? '10-20 years' : d.timeServed <= 30 ? '21-30 years' : d.timeServed <= 40 ? '31-40 years' : '40+ years';
+        timeGroups[g].t++;
+        if (d.outcome === 'Approved') timeGroups[g].a++;
+      });
+      
+      if (timeChart) timeChart.destroy();
+      timeChart = new Chart(document.getElementById('timeChart'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(timeGroups),
+          datasets: [
+            { label: 'Total', data: Object.values(timeGroups).map(g => g.t), backgroundColor: '#718096', borderRadius: 4 },
+            { label: 'Approved', data: Object.values(timeGroups).map(g => g.a), backgroundColor: '#38a169', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: { x: { grid: { display: false } }, y: { grid: { color: '#e2e8f0' } } }
+        }
+      });
+      
+      // Violent charges
+      const violentGroups = { '1 charge': {t:0,a:0}, '2 charges': {t:0,a:0}, '3+ charges': {t:0,a:0} };
+      data.filter(d => d.violent !== null && d.violent > 0).forEach(d => {
+        let g = d.violent === 1 ? '1 charge' : d.violent === 2 ? '2 charges' : '3+ charges';
+        violentGroups[g].t++;
+        if (d.outcome === 'Approved') violentGroups[g].a++;
+      });
+      
+      if (violentChart) violentChart.destroy();
+      violentChart = new Chart(document.getElementById('violentChart'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(violentGroups),
+          datasets: [
+            { label: 'Total', data: Object.values(violentGroups).map(g => g.t), backgroundColor: '#718096', borderRadius: 4 },
+            { label: 'Approved', data: Object.values(violentGroups).map(g => g.a), backgroundColor: '#38a169', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: { x: { grid: { display: false } }, y: { grid: { color: '#e2e8f0' } } }
+        }
+      });
+      
+      // Findings
+      document.getElementById('findingApproval').textContent = `Only ${approvalRate}% of cases received majority approval. The Board is highly selective.`;
+      
+      if (sortedMembers.length > 0) {
+        const topMember = sortedMembers[0];
+        document.getElementById('findingMG').textContent = `${topMember}${memberNames[topMember] ? ' (' + memberNames[topMember] + ')' : ''} cast the most dissenting votes (${memberStats[topMember].length}), often voting Yes on denied cases.`;
+      }
+      
+      if (sortedMembers.length > 1) {
+        const secondMember = sortedMembers[1];
+        document.getElementById('findingAD').textContent = `${secondMember}${memberNames[secondMember] ? ' (' + memberNames[secondMember] + ')' : ''} cast ${memberStats[secondMember].length} dissenting votes across the dataset.`;
+      }
+      
+      // Table
+      const tbody = document.getElementById('caseTableBody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.year}</td>
+          <td>${row.date || ''}</td>
+          <td style="font-weight:500">${row.name || ''}</td>
+          <td>${row.county || ''}</td>
+          <td>${row.race}</td>
+          <td>${row.sex}</td>
+          <td style="text-align:center;font-family:monospace">${row.vote}</td>
+          <td>${row.outlier ? `<span class="badge-outlier">${row.outlier}</span>` : ''}</td>
+          <td style="text-align:center"><span class="badge badge-${row.outcome.toLowerCase()}">${row.outcome}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('caseCount').textContent = `All Cases (${data.length})`;
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(PardonsAnalysis));
+    function showTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function resetFilters() {
+      document.getElementById('yearFilter').value = 'All';
+      document.getElementById('raceFilter').value = 'All';
+      document.getElementById('sexFilter').value = 'All';
+      document.getElementById('countyFilter').value = 'All';
+      updateDashboard();
+    }
+
+    // Event listeners
+    document.getElementById('yearFilter').addEventListener('change', updateDashboard);
+    document.getElementById('raceFilter').addEventListener('change', updateDashboard);
+    document.getElementById('sexFilter').addEventListener('change', updateDashboard);
+    document.getElementById('countyFilter').addEventListener('change', updateDashboard);
+
+    // Initial load
+    updateDashboard();
   </script>
 </body>
 </html>
